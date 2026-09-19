@@ -72,14 +72,14 @@
                 <Spinner
                     android:id="@+id/sp_baud"
                     android:layout_width="0dp"
-                    android:layout_height="36dp"
+                    android:layout_height="34dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_field" />
 
                 <Spinner
                     android:id="@+id/sp_data_bits"
                     android:layout_width="0dp"
-                    android:layout_height="36dp"
+                    android:layout_height="34dp"
                     android:layout_marginStart="5dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_field" />
@@ -87,7 +87,7 @@
                 <Spinner
                     android:id="@+id/sp_parity"
                     android:layout_width="0dp"
-                    android:layout_height="36dp"
+                    android:layout_height="34dp"
                     android:layout_marginStart="5dp"
                     android:layout_weight="1.15"
                     android:background="@drawable/bg_field" />
@@ -95,7 +95,7 @@
                 <Spinner
                     android:id="@+id/sp_stop_bits"
                     android:layout_width="0dp"
-                    android:layout_height="36dp"
+                    android:layout_height="34dp"
                     android:layout_marginStart="5dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_field" />
@@ -103,15 +103,15 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_height="32dp"
+                android:layout_marginTop="7dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <CheckBox
                     android:id="@+id/cb_hex_display"
                     android:layout_width="wrap_content"
-                    android:layout_height="30dp"
+                    android:layout_height="32dp"
                     android:buttonTint="#2DD4BF"
                     android:checked="true"
                     android:text="HEX显示"
@@ -121,7 +121,7 @@
                 <CheckBox
                     android:id="@+id/cb_hex_send"
                     android:layout_width="wrap_content"
-                    android:layout_height="30dp"
+                    android:layout_height="32dp"
                     android:buttonTint="#2DD4BF"
                     android:checked="true"
                     android:text="HEX发送"
@@ -131,7 +131,7 @@
                 <TextView
                     android:id="@+id/tv_count"
                     android:layout_width="0dp"
-                    android:layout_height="30dp"
+                    android:layout_height="32dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_field"
@@ -145,7 +145,7 @@
                 <Button
                     android:id="@+id/btn_clear_data"
                     android:layout_width="70dp"
-                    android:layout_height="30dp"
+                    android:layout_height="32dp"
                     android:layout_marginStart="5dp"
                     android:background="@drawable/bg_button_secondary"
                     android:minHeight="0dp"
@@ -158,7 +158,7 @@
                 <Button
                     android:id="@+id/btn_clear_count"
                     android:layout_width="70dp"
-                    android:layout_height="30dp"
+                    android:layout_height="32dp"
                     android:layout_marginStart="5dp"
                     android:background="@drawable/bg_button_danger"
                     android:minHeight="0dp"
