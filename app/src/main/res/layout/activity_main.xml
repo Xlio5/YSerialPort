@@ -1,24 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <ScrollView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/bg_main_root"
-        android:fillViewport="true">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingBottom="8dp">
+            android:paddingBottom="5dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -32,22 +27,14 @@
                     android:layout_height="wrap_content"
                     android:text="Android 串口助手"
                     android:textColor="#F8FAFC"
-                    android:textSize="19sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Serial Console"
-                    android:textColor="#8FA3BE"
-                    android:textSize="12sp" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/tv_status"
-                android:layout_width="76dp"
-                android:layout_height="32dp"
+                android:layout_width="70dp"
+                android:layout_height="30dp"
                 android:background="@drawable/bg_field"
                 android:gravity="center"
                 android:text="未打开"
@@ -60,15 +47,15 @@
             android:layout_height="wrap_content"
             android:background="@drawable/bg_panel"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="6dp">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="6dp"
+                android:paddingBottom="4dp"
                 android:text="串口连接"
                 android:textColor="#CBD5E1"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -79,52 +66,54 @@
                 <Spinner
                     android:id="@+id/sp_device"
                     android:layout_width="0dp"
-                    android:layout_height="42dp"
+                    android:layout_height="36dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_field" />
 
                 <Button
                     android:id="@+id/btn_scan"
-                    android:layout_width="70dp"
-                    android:layout_height="42dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_width="64dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="5dp"
                     android:background="@drawable/bg_button_secondary"
                     android:minHeight="0dp"
                     android:minWidth="0dp"
                     android:padding="0dp"
                     android:text="扫描"
-                    android:textColor="#E2E8F0" />
+                    android:textColor="#E2E8F0"
+                    android:textSize="13sp" />
 
                 <Button
                     android:id="@+id/btn_open"
-                    android:layout_width="88dp"
-                    android:layout_height="42dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_width="82dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="5dp"
                     android:background="@drawable/bg_button_primary"
                     android:minHeight="0dp"
                     android:minWidth="0dp"
                     android:padding="0dp"
                     android:text="打开串口"
-                    android:textColor="#ECFEFF" />
+                    android:textColor="#ECFEFF"
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
+                android:layout_marginTop="5dp"
                 android:orientation="horizontal">
 
                 <Spinner
                     android:id="@+id/sp_baud"
                     android:layout_width="0dp"
-                    android:layout_height="42dp"
+                    android:layout_height="36dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_field" />
 
                 <Spinner
                     android:id="@+id/sp_data_bits"
                     android:layout_width="0dp"
-                    android:layout_height="42dp"
+                    android:layout_height="36dp"
                     android:layout_marginStart="5dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_field" />
@@ -132,7 +121,7 @@
                 <Spinner
                     android:id="@+id/sp_parity"
                     android:layout_width="0dp"
-                    android:layout_height="42dp"
+                    android:layout_height="36dp"
                     android:layout_marginStart="5dp"
                     android:layout_weight="1.15"
                     android:background="@drawable/bg_field" />
@@ -140,7 +129,7 @@
                 <Spinner
                     android:id="@+id/sp_stop_bits"
                     android:layout_width="0dp"
-                    android:layout_height="42dp"
+                    android:layout_height="36dp"
                     android:layout_marginStart="5dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_field" />
@@ -149,45 +138,48 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <CheckBox
                     android:id="@+id/cb_hex_display"
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
+                    android:layout_height="30dp"
                     android:buttonTint="#2DD4BF"
                     android:checked="true"
                     android:text="HEX显示"
-                    android:textColor="#E2E8F0" />
+                    android:textColor="#E2E8F0"
+                    android:textSize="13sp" />
 
                 <CheckBox
                     android:id="@+id/cb_hex_send"
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
+                    android:layout_height="30dp"
                     android:buttonTint="#2DD4BF"
                     android:checked="true"
                     android:text="HEX发送"
-                    android:textColor="#E2E8F0" />
+                    android:textColor="#E2E8F0"
+                    android:textSize="13sp" />
             </LinearLayout>
         </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
             android:paddingStart="2dp"
-            android:paddingBottom="5dp"
+            android:paddingBottom="3dp"
             android:text="通讯数据"
             android:textColor="#CBD5E1"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="bold" />
 
         <ScrollView
             android:id="@+id/sv_log"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:background="@drawable/bg_log"
             android:fillViewport="true">
 
@@ -196,85 +188,88 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
-                android:padding="10dp"
+                android:padding="8dp"
                 android:textColor="#D7E0EA"
                 android:textIsSelectable="true"
-                android:textSize="13sp" />
+                android:textSize="12sp" />
         </ScrollView>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="6dp"
             android:background="@drawable/bg_panel"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="6dp">
 
             <TextView
                 android:id="@+id/tv_send_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="6dp"
+                android:paddingBottom="4dp"
                 android:text="写入数据"
                 android:textColor="#F8FAFC"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/et_send"
                 android:layout_width="match_parent"
-                android:layout_height="86dp"
+                android:layout_height="54dp"
                 android:background="@drawable/bg_field"
                 android:gravity="top|start"
                 android:hint="HEX: 01 03 00 00 00 02 / ASCII: AT+PING"
                 android:inputType="textMultiLine|textNoSuggestions"
-                android:padding="10dp"
+                android:padding="8dp"
                 android:textColor="#F8FAFC"
                 android:textColorHighlight="#334155"
                 android:textColorHint="#8FA3BE"
                 android:textColorLink="#2DD4BF"
                 android:textCursorDrawable="@null"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
+                android:layout_marginTop="5dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <CheckBox
                     android:id="@+id/cb_timed_send"
                     android:layout_width="wrap_content"
-                    android:layout_height="42dp"
+                    android:layout_height="34dp"
                     android:buttonTint="#2DD4BF"
                     android:text="定时发送"
-                    android:textColor="#E2E8F0" />
+                    android:textColor="#E2E8F0"
+                    android:textSize="13sp" />
 
                 <EditText
                     android:id="@+id/et_interval"
-                    android:layout_width="76dp"
-                    android:layout_height="42dp"
+                    android:layout_width="66dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/bg_field"
                     android:gravity="center"
                     android:inputType="number"
                     android:maxLength="6"
                     android:text="1000"
                     android:textColor="#F8FAFC"
-                    android:textCursorDrawable="@null" />
+                    android:textCursorDrawable="@null"
+                    android:textSize="13sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="5dp"
-                    android:paddingEnd="7dp"
+                    android:paddingEnd="6dp"
                     android:text="ms/次"
-                    android:textColor="#AAB7C8" />
+                    android:textColor="#AAB7C8"
+                    android:textSize="12sp" />
 
                 <Button
                     android:id="@+id/btn_send"
                     android:layout_width="0dp"
-                    android:layout_height="42dp"
+                    android:layout_height="34dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_button_primary"
                     android:minHeight="0dp"
@@ -282,6 +277,7 @@
                     android:padding="0dp"
                     android:text="发送"
                     android:textColor="#ECFEFF"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
@@ -289,46 +285,48 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="5dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/tv_count"
                 android:layout_width="0dp"
-                android:layout_height="38dp"
+                android:layout_height="34dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_field"
                 android:gravity="center_vertical"
                 android:paddingStart="10dp"
                 android:text="S:0  R:0"
                 android:textColor="#CFFAFE"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <Button
                 android:id="@+id/btn_clear_data"
-                android:layout_width="82dp"
-                android:layout_height="38dp"
+                android:layout_width="76dp"
+                android:layout_height="34dp"
                 android:layout_marginStart="6dp"
                 android:background="@drawable/bg_button_secondary"
                 android:minHeight="0dp"
                 android:minWidth="0dp"
                 android:padding="0dp"
                 android:text="清数据"
-                android:textColor="#E2E8F0" />
+                android:textColor="#E2E8F0"
+                android:textSize="12sp" />
 
             <Button
                 android:id="@+id/btn_clear_count"
-                android:layout_width="82dp"
-                android:layout_height="38dp"
+                android:layout_width="76dp"
+                android:layout_height="34dp"
                 android:layout_marginStart="6dp"
                 android:background="@drawable/bg_button_danger"
                 android:minHeight="0dp"
                 android:minWidth="0dp"
                 android:padding="0dp"
                 android:text="清计数"
-                android:textColor="#FFE4E6" />
+                android:textColor="#FFE4E6"
+                android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
-    </ScrollView>
 </layout>
