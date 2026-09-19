@@ -167,14 +167,14 @@
                     android:layout_width="70dp"
                     android:layout_height="32dp"
                     android:layout_marginStart="5dp"
-                    android:background="@drawable/bg_button_danger"
+                    android:background="@drawable/bg_button_secondary"
                     android:backgroundTint="@null"
                     app:backgroundTint="@null"
                     android:minHeight="0dp"
                     android:minWidth="0dp"
                     android:padding="0dp"
                     android:text="清计数"
-                    android:textColor="#FCA5A5"
+                    android:textColor="#E2E8F0"
                     android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
