@@ -89,8 +89,8 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
 
     private void setAdapter(android.widget.Spinner spinner, String[] values) {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, values);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.layout.item_spinner_dark, values);
+        adapter.setDropDownViewResource(R.layout.item_spinner_dark_dropdown);
         spinner.setAdapter(adapter);
     }
 
@@ -249,7 +249,7 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
         boolean open = isOpen();
         binding.btnOpen.setText(open ? "关闭串口" : "打开串口");
         binding.tvStatus.setText(open ? "已打开" : "未打开");
-        binding.tvStatus.setTextColor(open ? 0xFF047857 : 0xFFB91C1C);
+        binding.tvStatus.setTextColor(open ? 0xFF5EEAD4 : 0xFFFB7185);
     }
 
     private void refreshCount() {
