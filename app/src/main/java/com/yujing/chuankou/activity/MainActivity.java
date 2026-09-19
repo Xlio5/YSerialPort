@@ -248,8 +248,7 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
     private void refreshStatus() {
         boolean open = isOpen();
         binding.btnOpen.setText(open ? "关闭串口" : "打开串口");
-        binding.tvStatus.setText(open ? "已打开" : "未打开");
-        binding.tvStatus.setTextColor(open ? 0xFF5EEAD4 : 0xFFFB7185);
+        binding.btnOpen.setBackgroundResource(open ? R.drawable.bg_button_danger : R.drawable.bg_button_primary);
     }
 
     private void refreshCount() {
