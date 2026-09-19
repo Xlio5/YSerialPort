@@ -20,7 +20,7 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="4dp"
                 android:text="串口连接"
-                android:textColor="#CBD5E1"
+                android:textColor="#94A3B8"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -59,7 +59,7 @@
                     android:minWidth="0dp"
                     android:padding="0dp"
                     android:text="打开串口"
-                    android:textColor="#ECFEFF"
+                    android:textColor="#0F172A"
                     android:textSize="13sp" />
             </LinearLayout>
 
@@ -112,7 +112,7 @@
                     android:id="@+id/cb_hex_display"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
-                    android:buttonTint="#2DD4BF"
+                    android:buttonTint="#38BDF8"
                     android:checked="true"
                     android:text="HEX显示"
                     android:textColor="#E2E8F0"
@@ -122,7 +122,7 @@
                     android:id="@+id/cb_hex_send"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
-                    android:buttonTint="#2DD4BF"
+                    android:buttonTint="#38BDF8"
                     android:checked="true"
                     android:text="HEX发送"
                     android:textColor="#E2E8F0"
@@ -138,7 +138,7 @@
                     android:gravity="center_vertical"
                     android:paddingStart="8dp"
                     android:text="S:0  R:0"
-                    android:textColor="#CFFAFE"
+                    android:textColor="#38BDF8"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -165,7 +165,7 @@
                     android:minWidth="0dp"
                     android:padding="0dp"
                     android:text="清计数"
-                    android:textColor="#FFE4E6"
+                    android:textColor="#FCA5A5"
                     android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
@@ -189,7 +189,7 @@
                     android:paddingStart="2dp"
                     android:paddingBottom="3dp"
                     android:text="通讯数据"
-                    android:textColor="#CBD5E1"
+                    android:textColor="#94A3B8"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -207,7 +207,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
                     android:padding="8dp"
-                    android:textColor="#D7E0EA"
+                    android:textColor="#E2E8F0"
                     android:textIsSelectable="true"
                     android:textSize="12sp" />
                 </ScrollView>
@@ -228,7 +228,7 @@
                     android:layout_height="wrap_content"
                     android:paddingBottom="4dp"
                     android:text="写入数据"
-                    android:textColor="#F8FAFC"
+                    android:textColor="#E2E8F0"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -243,10 +243,10 @@
                     android:inputType="textMultiLine|textNoSuggestions"
                     android:minHeight="72dp"
                     android:padding="8dp"
-                    android:textColor="#F8FAFC"
+                    android:textColor="#E2E8F0"
                     android:textColorHighlight="#334155"
-                    android:textColorHint="#8FA3BE"
-                    android:textColorLink="#2DD4BF"
+                    android:textColorHint="#64748B"
+                    android:textColorLink="#38BDF8"
                     android:textCursorDrawable="@null"
                     android:textSize="13sp" />
 
@@ -261,7 +261,7 @@
                         android:id="@+id/cb_timed_send"
                         android:layout_width="42dp"
                         android:layout_height="34dp"
-                        android:buttonTint="#2DD4BF"
+                        android:buttonTint="#38BDF8"
                         android:text=""
                         android:textColor="#E2E8F0"
                         android:textSize="12sp" />
@@ -275,7 +275,7 @@
                         android:inputType="number"
                         android:maxLength="6"
                         android:text="1000"
-                        android:textColor="#F8FAFC"
+                        android:textColor="#E2E8F0"
                         android:textCursorDrawable="@null"
                         android:textSize="12sp" />
 
@@ -290,7 +290,7 @@
                         android:minWidth="0dp"
                         android:padding="0dp"
                         android:text="发送"
-                        android:textColor="#ECFEFF"
+                        android:textColor="#0F172A"
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>

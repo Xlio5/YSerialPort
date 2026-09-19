@@ -11,5 +11,9 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/tun_background</item>
+        <item name="android:navigationBarColor">@color/tun_background</item>
+        <item name="android:statusBarColor">@color/tun_status_bar</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>
