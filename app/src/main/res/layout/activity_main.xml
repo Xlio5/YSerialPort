@@ -4,7 +4,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#F4F6F8"
+        android:background="#0F172A"
         android:orientation="vertical"
         android:padding="8dp">
 
@@ -14,7 +14,7 @@
             android:layout_height="wrap_content"
             android:paddingBottom="6dp"
             android:text="Android 串口助手"
-            android:textColor="#1F2937"
+            android:textColor="#F8FAFC"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -90,14 +90,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:checked="true"
-                android:text="HEX显示" />
+                android:text="HEX显示"
+                android:textColor="#E5E7EB" />
 
             <CheckBox
                 android:id="@+id/cb_hex_send"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:checked="true"
-                android:text="HEX发送" />
+                android:text="HEX发送"
+                android:textColor="#E5E7EB" />
 
             <TextView
                 android:id="@+id/tv_status"
@@ -116,7 +118,7 @@
             android:layout_height="0dp"
             android:layout_marginTop="4dp"
             android:layout_weight="1"
-            android:background="#FFFFFF"
+            android:background="#020617"
             android:fillViewport="true">
 
             <TextView
@@ -125,21 +127,34 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
                 android:padding="8dp"
-                android:textColor="#111827"
+                android:textColor="#D1D5DB"
                 android:textIsSelectable="true"
                 android:textSize="13sp" />
         </ScrollView>
+
+        <TextView
+            android:id="@+id/tv_send_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:paddingBottom="4dp"
+            android:text="写入数据"
+            android:textColor="#F8FAFC"
+            android:textStyle="bold" />
 
         <EditText
             android:id="@+id/et_send"
             android:layout_width="match_parent"
             android:layout_height="86dp"
-            android:layout_marginTop="6dp"
-            android:background="#FFFFFF"
+            android:background="#111827"
             android:gravity="top|start"
             android:hint="HEX: 01 03 00 00 00 02 / ASCII: AT+PING"
             android:inputType="textMultiLine|textNoSuggestions"
             android:padding="8dp"
+            android:textColor="#F8FAFC"
+            android:textColorHighlight="#334155"
+            android:textColorHint="#94A3B8"
+            android:textColorLink="#38BDF8"
             android:textSize="14sp" />
 
         <LinearLayout
@@ -153,22 +168,26 @@
                 android:id="@+id/cb_timed_send"
                 android:layout_width="wrap_content"
                 android:layout_height="42dp"
-                android:text="定时发送" />
+                android:text="定时发送"
+                android:textColor="#E5E7EB" />
 
             <EditText
                 android:id="@+id/et_interval"
                 android:layout_width="72dp"
                 android:layout_height="42dp"
+                android:background="#111827"
                 android:inputType="number"
                 android:maxLength="6"
-                android:text="1000" />
+                android:text="1000"
+                android:textColor="#F8FAFC" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingStart="4dp"
                 android:paddingEnd="4dp"
-                android:text="ms/次" />
+                android:text="ms/次"
+                android:textColor="#E5E7EB" />
 
             <Button
                 android:id="@+id/btn_send"
@@ -191,7 +210,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="S:0  R:0"
-                android:textColor="#111827" />
+                android:textColor="#E5E7EB" />
 
             <Button
                 android:id="@+id/btn_clear_data"
