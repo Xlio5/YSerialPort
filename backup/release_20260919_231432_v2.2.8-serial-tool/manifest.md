@@ -7,6 +7,7 @@
 - Size: 8649378 bytes
 - SHA256: 983735AAA5C25208BE7747B17CFC32BBBF2D84C1C20D5136D328774BDC7ECE99
 - Git branch: master
-- Git commit: 4394d2b66f6302ee1c965c84d1076247e2ba1001
+- Git commit: b45c2f9fce3cd44f3af196c69d00505dc65ab0ea
 - Purpose: Android serial communication tool APK with serial scan/open/close, HEX/ASCII display/send, timed send, TX/RX counters, clear data and clear counters.
 - Readback verification: copied APK SHA256 matches source APK SHA256.
+
