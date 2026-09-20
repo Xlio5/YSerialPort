@@ -15,5 +15,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-include ':app', ':yserialport'
+include ':app', ':yserialport', ':ch34x'
 rootProject.name = '串口测试APP'

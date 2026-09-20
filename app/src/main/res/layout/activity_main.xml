@@ -118,7 +118,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
                     android:buttonTint="#38BDF8"
-                    android:checked="true"
+                    android:checked="false"
                     android:text="HEX显示"
                     android:textColor="#E2E8F0"
                     android:textSize="13sp" />
@@ -128,7 +128,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
                     android:buttonTint="#38BDF8"
-                    android:checked="true"
+                    android:checked="false"
                     android:text="HEX发送"
                     android:textColor="#E2E8F0"
                     android:textSize="13sp" />
