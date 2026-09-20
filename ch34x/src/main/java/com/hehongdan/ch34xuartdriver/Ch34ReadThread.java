@@ -27,6 +27,7 @@ public class Ch34ReadThread extends Thread {
     private UsbDeviceConnection usbDeviceConnection;
     //字节缓冲区
     private ByteBuffer[] byteBuffers = new ByteBuffer[CH34xUARTDriver.REQUEST_COUNT];
+    private final int packetSize;
     /**
      * 数据监听
      */
@@ -36,12 +37,13 @@ public class Ch34ReadThread extends Thread {
         this.ch34xUARTDriver = driver;
         this.usbEndpoint = endpoint;
         this.usbDeviceConnection = deviceConnection;
+        this.packetSize = Math.max(1, endpoint.getMaxPacketSize());
         for (int i = 0; i < CH34xUARTDriver.REQUEST_COUNT; ++i) {
             //初始化读写工具
             driver.getUsbRequests()[i] = new UsbRequest();
             driver.getUsbRequests()[i].initialize(this.usbDeviceConnection, this.usbEndpoint);
             //分配字节缓冲区（容量）。
-            byteBuffers[i] = ByteBuffer.allocate(this.ch34xUARTDriver._32);
+            byteBuffers[i] = ByteBuffer.allocate(this.packetSize);
         }
         //更改线程优先级(1-10,10最优先)
         this.setPriority(10);
@@ -68,7 +70,8 @@ public class Ch34ReadThread extends Thread {
              * @return true，如果排队操作成功
              * @deprecated 已过时， {@link UsbRequest#queue(ByteBuffer)} 代替。
              */
-            this.ch34xUARTDriver.getUsbRequests()[i].queue(byteBuffers[i], this.ch34xUARTDriver._32);
+            byteBuffers[i].clear();
+            this.ch34xUARTDriver.getUsbRequests()[i].queue(byteBuffers[i], this.packetSize);
         }
         int count = 0;
         root:
@@ -93,17 +96,22 @@ public class Ch34ReadThread extends Thread {
                 byte[] 缓冲区 = byteBuffers[i].array();
                 int 缓冲区_长度 = byteBuffers[i].position();
                 if (缓冲区_长度 > 0) {
+                    boolean acquired = false;
                     try {
                         this.ch34xUARTDriver.getSemaphore().acquire();
+                        acquired = true;
+                        byte[] bytes = Arrays.copyOf(缓冲区, 缓冲区_长度);
+                        //Log.v("数据", Utils.bytesToHexString(bytes));
+                        if (listener != null) listener.value(bytes);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        Thread.currentThread().interrupt();
+                        break root;
+                    } finally {
+                        if (acquired) this.ch34xUARTDriver.getSemaphore().release();
                     }
-                    byte[] bytes = Arrays.copyOf(缓冲区, 缓冲区_长度);
-                    //Log.v("数据", Utils.bytesToHexString(bytes));
-                    if (listener != null) listener.value(bytes);
-                    this.ch34xUARTDriver.getSemaphore().release();
                 }
-                this.ch34xUARTDriver.getUsbRequests()[i].queue(byteBuffers[i], this.ch34xUARTDriver._32);
+                byteBuffers[i].clear();
+                this.ch34xUARTDriver.getUsbRequests()[i].queue(byteBuffers[i], this.packetSize);
             }
         }
 

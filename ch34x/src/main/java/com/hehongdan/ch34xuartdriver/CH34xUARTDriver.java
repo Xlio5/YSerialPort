@@ -143,6 +143,11 @@ public class CH34xUARTDriver {
     private Listener closeListener;
 
     /**
+     * USB权限通过监听
+     */
+    private Listener permissionListener;
+
+    /**
      * 构造方法
      *
      * @param usbManager USB管理器
@@ -162,10 +167,12 @@ public class CH34xUARTDriver {
     }
 
     private PendingIntent createPendingIntent() {
+        Intent intent = new Intent(this.broadcastReceiverFilter);
+        intent.setPackage(this.context.getPackageName());
         int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-                ? PendingIntent.FLAG_MUTABLE
-                : 0;
-        return PendingIntent.getBroadcast(this.context, 0, new Intent(this.broadcastReceiverFilter), flags);
+                ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
+                : PendingIntent.FLAG_UPDATE_CURRENT;
+        return PendingIntent.getBroadcast(this.context, 0, intent, flags);
     }
 
     private void ensureReceiverRegistered() {
@@ -623,21 +630,29 @@ public class CH34xUARTDriver {
                 this.usbDevice = null;
                 this.usbInterface = null;
             }
-            UsbInterface usbInterface;
-            int USB接口数量 = 0;//用于具有多种配置的设备
-            while (true) {
-                if (USB接口数量 >= usbDevice.getInterfaceCount()) {
-                    usbInterface = null;
+            UsbInterface usbInterface_ = null;
+            UsbEndpoint inputEndpoint = null;
+            UsbEndpoint outputEndpoint = null;
+            for (int interfaceIndex = 0; interfaceIndex < usbDevice.getInterfaceCount(); interfaceIndex++) {
+                UsbInterface candidate = usbDevice.getInterface(interfaceIndex);
+                UsbEndpoint candidateInput = null;
+                UsbEndpoint candidateOutput = null;
+                for (int endpointIndex = 0; endpointIndex < candidate.getEndpointCount(); endpointIndex++) {
+                    UsbEndpoint endpoint = candidate.getEndpoint(endpointIndex);
+                    if (endpoint.getType() != UsbConstants.USB_ENDPOINT_XFER_BULK) continue;
+                    if (endpoint.getDirection() == UsbConstants.USB_DIR_IN) {
+                        candidateInput = endpoint;
+                    } else if (endpoint.getDirection() == UsbConstants.USB_DIR_OUT) {
+                        candidateOutput = endpoint;
+                    }
+                }
+                if (candidateInput != null && candidateOutput != null) {
+                    usbInterface_ = candidate;
+                    inputEndpoint = candidateInput;
+                    outputEndpoint = candidateOutput;
                     break;
                 }
-                UsbInterface var5;
-                if ((var5 = usbDevice.getInterface(USB接口数量)).getInterfaceClass() == 255 && var5.getInterfaceSubclass() == 1 && var5.getInterfaceProtocol() == 2) {
-                    usbInterface = var5;
-                    break;
-                }
-                ++USB接口数量;
             }
-            UsbInterface usbInterface_ = usbInterface;
             UsbDeviceConnection usbDeviceConnection;
             //USB设备不为空并且USB接口不为空
             //打开的设备连接器与当前类打开的一致
@@ -646,28 +661,9 @@ public class CH34xUARTDriver {
                 this.usbDevice = usbDevice;
                 this.usbDeviceConnection = usbDeviceConnection;
                 this.usbInterface = usbInterface_;
-                CH34xUARTDriver ch34xUARTDriver = this;
-                for (USB接口数量 = 0; USB接口数量 < usbInterface_.getEndpointCount(); ++USB接口数量) {
-                    UsbEndpoint endpoint;
-                    if ((endpoint = usbInterface_.getEndpoint(USB接口数量)).getType() == 2 && endpoint.getMaxPacketSize() == _32) {
-                        /**
-                         * .getDirection()：返回端点的方向。
-                         * 如果方向是主机到设备，则返回{@link UsbConstants#USB_DIR_OUT}，如果方向是设备到主机，则返回{@link UsbConstants#USB_DIR_IN}。
-                         *
-                         * @see UsbConstants#USB_DIR_IN
-                         * @see UsbConstants#USB_DIR_OUT
-                         *  @返回端点的方向
-                         */
-                        if (endpoint.getDirection() == UsbConstants.USB_DIR_IN) {
-                            ch34xUARTDriver.usbEndpoint_e = endpoint;
-                        } else {
-                            ch34xUARTDriver.usbEndpoint_f = endpoint;
-                        }
-                        ch34xUARTDriver.maxPacketSize = endpoint.getMaxPacketSize();
-                    } else {
-                        endpoint.getType();
-                    }
-                }
+                this.usbEndpoint_e = inputEndpoint;
+                this.usbEndpoint_f = outputEndpoint;
+                this.maxPacketSize = Math.max(1, outputEndpoint.getMaxPacketSize());
                 if (!this.isNullUsb) {
                     this.isNullUsb = true;
                     if (readThread != null) readThread.interrupt();
@@ -927,5 +923,18 @@ public class CH34xUARTDriver {
      */
     public void setCloseListener(Listener closeListener) {
         this.closeListener = closeListener;
+    }
+
+    /**
+     * USB权限通过监听
+     *
+     * @param permissionListener listener
+     */
+    public void setPermissionListener(Listener permissionListener) {
+        this.permissionListener = permissionListener;
+    }
+
+    void notifyPermissionGranted() {
+        if (permissionListener != null) permissionListener.value();
     }
 }

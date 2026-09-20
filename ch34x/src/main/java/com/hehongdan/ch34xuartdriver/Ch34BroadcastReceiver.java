@@ -37,6 +37,7 @@ public class Ch34BroadcastReceiver extends BroadcastReceiver {
                     //有USB权限
                     //CH34xUARTDriver.a(this.ch34xUARTDriver, var9);
                     this.ch34xUARTDriver.openDevice(usbDevice);
+                    this.ch34xUARTDriver.notifyPermissionGranted();
                 } else {
                     //广播 拒绝USB权限
                     if (this.ch34xUARTDriver.isShowToast()) {

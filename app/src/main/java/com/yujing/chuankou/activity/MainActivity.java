@@ -19,6 +19,7 @@ import com.yujing.serialport.SerialPort;
 import com.yujing.serialport.SerialPortFinder;
 
 import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
@@ -36,12 +37,19 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
     private static final String[] DATA_BITS = {"5", "6", "7", "8"};
     private static final String[] PARITY = {"None", "Odd", "Even"};
     private static final String[] STOP_BITS = {"1", "2"};
-    private static final int MAX_LOG_CHARS = 120_000;
+    private static final int MAX_LOG_CHARS = 4_000;
+    private static final long LOG_FLUSH_DELAY_MS = 500L;
+    private static final long RX_FLUSH_DELAY_MS = 500L;
+    private static final int MAX_RX_DISPLAY_BYTES_PER_FLUSH = 64;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final AtomicBoolean reading = new AtomicBoolean(false);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault());
     private final SerialLogBuffer logBuffer = new SerialLogBuffer(MAX_LOG_CHARS);
+    private final Object logLock = new Object();
+    private final Object rxLock = new Object();
+    private final StringBuilder pendingLog = new StringBuilder();
+    private final ByteArrayOutputStream pendingRxBytes = new ByteArrayOutputStream(MAX_RX_DISPLAY_BYTES_PER_FLUSH);
 
     private SerialPort serialPort;
     private InputStream inputStream;
@@ -49,7 +57,13 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
     private Thread readThread;
     private CH34xUARTDriver ch34xDriver;
     private UsbDevice ch34xDevice;
+    private SerialPortOption pendingCh34xOption;
     private boolean closingPort;
+    private boolean logFlushPosted;
+    private boolean rxFlushPosted;
+    private boolean countRefreshPosted;
+    private volatile boolean hexDisplay;
+    private int pendingRxTotalBytes;
     private long txBytes;
     private long rxBytes;
 
@@ -87,6 +101,8 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
             mainHandler.removeCallbacks(timedSendTask);
             if (checked) mainHandler.postDelayed(timedSendTask, readIntervalMs());
         });
+        hexDisplay = binding.cbHexDisplay.isChecked();
+        binding.cbHexDisplay.setOnCheckedChangeListener((buttonView, checked) -> hexDisplay = checked);
         refreshStatus();
         refreshCount();
     }
@@ -123,6 +139,11 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
 
     private void scanPorts() {
         List<SerialPortOption> options = new ArrayList<>();
+        int ch34xCount = 0;
+        for (UsbDevice device : listCh34xDevices()) {
+            options.add(SerialPortOption.ch34x(device.getVendorId(), device.getProductId(), device.getDeviceName()));
+            ch34xCount++;
+        }
         String[] devices = new SerialPortFinder().getAllDevicesPath();
         if (devices.length == 0) {
             devices = new String[]{"/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3", "/dev/ttyUSB0"};
@@ -130,11 +151,6 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
         }
         for (String device : devices) {
             options.add(SerialPortOption.nativePort(device));
-        }
-        int ch34xCount = 0;
-        for (UsbDevice device : listCh34xDevices()) {
-            options.add(SerialPortOption.ch34x(device.getVendorId(), device.getProductId(), device.getDeviceName()));
-            ch34xCount++;
         }
         if (ch34xCount > 0) {
             appendLog("SYS", "发现 " + ch34xCount + " 个 CH34x USB免驱设备");
@@ -196,18 +212,20 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
             return;
         }
         if (!ch34xDriver.getUsbManager().hasPermission(device)) {
+            pendingCh34xOption = option;
             ch34xDriver.openDevice(device);
-            toast("请授权 USB 设备后再次打开");
-            appendLog("SYS", "已请求 USB 权限，授权后再次点击打开串口");
+            toast("请授权 USB 设备");
+            appendLog("SYS", "已请求 USB 权限，授权后会自动继续打开");
             refreshStatus();
             return;
         }
         try {
+            pendingCh34xOption = null;
             int baud = Integer.parseInt(binding.spBaud.getSelectedItem().toString());
             byte dataBits = (byte) Integer.parseInt(binding.spDataBits.getSelectedItem().toString());
             byte parity = (byte) binding.spParity.getSelectedItemPosition();
             byte stopBits = (byte) Integer.parseInt(binding.spStopBits.getSelectedItem().toString());
-            ch34xDriver.setReadListener(bytes -> mainHandler.post(() -> onReceive(bytes)));
+            ch34xDriver.setReadListener(this::onReceive);
             ch34xDriver.setCloseListener(() -> {
                 if (closingPort) return;
                 mainHandler.post(() -> {
@@ -289,7 +307,7 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
                     int n = inputStream.read(buffer, 0, Math.min(buffer.length, available));
                     if (n > 0) {
                         byte[] data = Arrays.copyOf(buffer, n);
-                        mainHandler.post(() -> onReceive(data));
+                        onReceive(data);
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -306,11 +324,53 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
     }
 
     private void onReceive(byte[] data) {
+        if (data == null || data.length == 0) return;
         rxBytes += data.length;
-        appendLog("RX", binding.cbHexDisplay.isChecked()
-                ? SerialDataCodec.formatHex(data)
-                : SerialDataCodec.formatAscii(data));
-        refreshCount();
+        synchronized (rxLock) {
+            int remaining = MAX_RX_DISPLAY_BYTES_PER_FLUSH - pendingRxBytes.size();
+            if (remaining > 0) {
+                pendingRxBytes.write(data, 0, Math.min(remaining, data.length));
+            }
+            pendingRxTotalBytes += data.length;
+            if (!rxFlushPosted) {
+                rxFlushPosted = true;
+                mainHandler.postDelayed(this::flushReceive, RX_FLUSH_DELAY_MS);
+            }
+        }
+        scheduleCountRefresh();
+    }
+
+    private void flushReceive() {
+        byte[] displayBytes;
+        int totalBytes;
+        synchronized (rxLock) {
+            displayBytes = pendingRxBytes.toByteArray();
+            totalBytes = pendingRxTotalBytes;
+            pendingRxBytes.reset();
+            pendingRxTotalBytes = 0;
+            rxFlushPosted = false;
+        }
+        if (totalBytes <= 0) return;
+        String message = hexDisplay
+                ? SerialDataCodec.formatHex(displayBytes)
+                : SerialDataCodec.formatAscii(displayBytes);
+        if (displayBytes.length < totalBytes) {
+            message += " ... (+" + (totalBytes - displayBytes.length) + " bytes)";
+        }
+        appendLog("RX " + totalBytes + "B", message);
+    }
+
+    private void scheduleCountRefresh() {
+        synchronized (logLock) {
+            if (countRefreshPosted) return;
+            countRefreshPosted = true;
+        }
+        mainHandler.postDelayed(() -> {
+            synchronized (logLock) {
+                countRefreshPosted = false;
+            }
+            refreshCount();
+        }, RX_FLUSH_DELAY_MS);
     }
 
     private void sendCurrentText(boolean reportEmpty) {
@@ -332,7 +392,7 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
                 throw new IllegalStateException("写入返回 " + written);
             }
             txBytes += written;
-            appendLog("TX", binding.cbHexDisplay.isChecked()
+            appendLog("TX", hexDisplay
                     ? SerialDataCodec.formatHex(data)
                     : SerialDataCodec.formatAscii(data));
             refreshCount();
@@ -357,6 +417,12 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
         if (ch34xDriver != null) return;
         UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         ch34xDriver = new CH34xUARTDriver(usbManager, this, getPackageName() + ".USB_PERMISSION");
+        ch34xDriver.setPermissionListener(() -> mainHandler.post(() -> {
+            if (pendingCh34xOption != null && !isOpen()) {
+                appendLog("SYS", "USB 权限已通过，继续打开 CH34x");
+                openCh34xPort(pendingCh34xOption);
+            }
+        }));
     }
 
     private List<UsbDevice> listCh34xDevices() {
@@ -387,17 +453,44 @@ public class MainActivity extends BaseActivity<ActivityMainBinding> {
     }
 
     private void appendLog(String direction, String message) {
-        String line = "[" + timeFormat.format(new Date()) + "] " + direction + "  " + message + "\n";
-        SerialLogBuffer.Update update = logBuffer.append(line);
-        if (update.requiresFullRefresh()) {
-            binding.tvLog.setText(update.getFullText());
-        } else {
-            binding.tvLog.append(update.getAppendedText());
+        String line = "[" + currentTimeText() + "] " + direction + "  " + message + "\n";
+        synchronized (logLock) {
+            pendingLog.append(line);
+            if (logFlushPosted) return;
+            logFlushPosted = true;
         }
+        mainHandler.postDelayed(this::flushLog, LOG_FLUSH_DELAY_MS);
+    }
+
+    private String currentTimeText() {
+        synchronized (timeFormat) {
+            return timeFormat.format(new Date());
+        }
+    }
+
+    private void flushLog() {
+        String text;
+        synchronized (logLock) {
+            text = pendingLog.toString();
+            pendingLog.setLength(0);
+            logFlushPosted = false;
+        }
+        if (text.isEmpty()) return;
+        logBuffer.append(text);
+        binding.tvLog.setText(logBuffer.getText());
         binding.svLog.post(() -> binding.svLog.fullScroll(android.view.View.FOCUS_DOWN));
     }
 
     private void clearLog() {
+        synchronized (logLock) {
+            pendingLog.setLength(0);
+            logFlushPosted = false;
+        }
+        synchronized (rxLock) {
+            pendingRxBytes.reset();
+            pendingRxTotalBytes = 0;
+            rxFlushPosted = false;
+        }
         logBuffer.clear();
         binding.tvLog.setText("");
     }

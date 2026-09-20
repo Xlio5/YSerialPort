@@ -217,7 +217,7 @@
                     android:fontFamily="monospace"
                     android:padding="8dp"
                     android:textColor="#E2E8F0"
-                    android:textIsSelectable="true"
+                    android:textIsSelectable="false"
                     android:textSize="12sp" />
                 </ScrollView>
             </LinearLayout>
