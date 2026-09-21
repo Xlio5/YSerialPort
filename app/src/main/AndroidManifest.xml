@@ -36,6 +36,15 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".activity.SerialAssistantActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".activity.UdpAssistantActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".activity.SerialUdpBridgeActivity"
+            android:screenOrientation="landscape" />
         <activity android:name=".activity.SendActivity" />
         <activity android:name=".activity.myTest.SendFileActivity" />
         <activity android:name=".activity.myTest.MyMainActivity" />
