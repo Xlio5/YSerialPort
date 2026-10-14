@@ -75,10 +75,11 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     protected void init() {
         setupBaudRate();
         scanPorts();
+        loadBundledFirmware();
         binding.btnScan.setOnClickListener(v -> scanPorts());
         binding.btnConnect.setOnClickListener(v -> toggleSerial());
-        binding.btnBootFile.setOnClickListener(v -> chooseFile(REQUEST_BOOT_FILE));
-        binding.btnAppFile.setOnClickListener(v -> chooseFile(REQUEST_APP_FILE));
+        binding.btnBootFile.setVisibility(View.GONE);
+        binding.btnAppFile.setVisibility(View.GONE);
         binding.btnBootPrepare.setOnClickListener(v -> startBootUpgrade());
         binding.btnBootStart.setVisibility(View.GONE);
         binding.btnAppCommand.setVisibility(View.GONE);
@@ -88,6 +89,28 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         refreshSerialStatus();
         refreshBusy();
         mainHandler.postDelayed(this::autoConnectDefaultSerial, 300);
+    }
+
+    private void loadBundledFirmware() {
+        try {
+            bootFile = readBundledFirmware(R.raw.boot_rq10_v2_11_260708, "BOOT_RQ10_v2.11_260708.bin");
+            appFile = readBundledFirmware(R.raw.app_rq10_20260710, "APP_RQ10_20260710.bin");
+            binding.tvBootFile.setText(bootFile.name + "  " + bootFile.data.length + "B");
+            binding.tvAppFile.setText(appFile.name + "  " + appFile.data.length + "B");
+            appendLog("SYS", "已内置 BOOT/APP 固件");
+        } catch (Exception e) {
+            appendLog("ERR", "读取内置固件失败: " + e.getMessage());
+        }
+    }
+
+    private FirmwareFile readBundledFirmware(int resId, String name) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (InputStream in = getResources().openRawResource(resId)) {
+            byte[] buffer = new byte[8192];
+            int n;
+            while ((n = in.read(buffer)) > 0) bos.write(buffer, 0, n);
+        }
+        return new FirmwareFile(name, bos.toByteArray());
     }
 
     private void setupBaudRate() {
