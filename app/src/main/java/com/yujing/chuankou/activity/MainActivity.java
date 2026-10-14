@@ -37,6 +37,8 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private static final String DEFAULT_DEVICE = "/dev/ttyUSB1";
     private static final String DEFAULT_BAUD = "115200";
     private static final int MAX_LOG_CHARS = 8_000;
+    private static final int RX_LOG_INTERVAL_MS = 120;
+    private static final int RX_LOG_PREVIEW_BYTES = 32;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor();
@@ -44,6 +46,8 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private final AtomicBoolean reading = new AtomicBoolean(false);
     private final SerialLogBuffer logBuffer = new SerialLogBuffer(MAX_LOG_CHARS);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault());
+    private final Object rxLogLock = new Object();
+    private final byte[] rxLogPreview = new byte[RX_LOG_PREVIEW_BYTES];
 
     private SerialPort serialPort;
     private InputStream inputStream;
@@ -54,6 +58,11 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private FirmwareFile appFile;
     private volatile boolean busy;
     private volatile boolean appSideOtaMode;
+    private volatile boolean activityVisible = true;
+    private volatile boolean destroyed;
+    private int pendingRxBytes;
+    private int pendingRxPreviewBytes;
+    private boolean rxLogScheduled;
 
     public MainActivity() {
         super(R.layout.activity_mode);
@@ -156,8 +165,7 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
                     int n = inputStream == null ? -1 : inputStream.read(buffer);
                     if (n <= 0) continue;
                     for (int i = 0; i < n; i++) incomingBytes.offer(buffer[i] & 0xFF);
-                    byte[] copy = Arrays.copyOf(buffer, n);
-                    mainHandler.post(() -> appendLog("RX " + copy.length + "B", preview(copy, copy.length)));
+                    queueRxLog(buffer, n);
                 } catch (Exception e) {
                     if (reading.get()) mainHandler.post(() -> appendLog("ERR", "读取串口失败: " + e.getMessage()));
                     break;
@@ -170,8 +178,10 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private void startBootPass1() {
         if (bootFile == null) {
             toast("请先选择 BOOTLOADER 固件");
+            appendLog("ERR", "未选择 BOOTLOADER 固件，不能发送校验包");
             return;
         }
+        appendLog("SYS", "发送 bl_upgrade，等待设备进入 BOOTLOADER 校验接收");
         appSideOtaMode = false;
         runUpgrade("BOOTLOADER 校验", bootFile, false, () -> writeBytes(MavlinkSerialControl.shellCommand("bl_upgrade")));
     }
@@ -179,8 +189,10 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private void startBootPass2() {
         if (bootFile == null) {
             toast("请先选择 BOOTLOADER 固件");
+            appendLog("ERR", "未选择 BOOTLOADER 固件，不能开始升级");
             return;
         }
+        appendLog("SYS", "等待设备第二次请求，发送 BOOTLOADER 正式升级包");
         appSideOtaMode = false;
         runUpgrade("BOOTLOADER 开始升级", bootFile, false, null);
     }
@@ -188,6 +200,7 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private void startAppUpgrade() {
         if (appFile == null) {
             toast("请先选择 APP 固件");
+            appendLog("ERR", "未选择 APP 固件，不能发送 APP 固件");
             return;
         }
         boolean singleEotAck = appSideOtaMode;
@@ -212,6 +225,9 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         if (!ensureSerialReady() || busy) return;
         busy = true;
         refreshBusy();
+        binding.progressUpgrade.setProgress(0);
+        binding.tvProgress.setText(title + " 准备中");
+        appendLog("SYS", title + " 已启动: " + firmwareFile.name + " (" + firmwareFile.data.length + "B)");
         workExecutor.execute(() -> {
             try {
                 if (beforeTransfer != null) {
@@ -245,6 +261,7 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private boolean ensureSerialReady() {
         if (!isSerialOpen() || outputStream == null) {
             toast("请先连接串口");
+            appendLog("ERR", "串口未连接，操作已取消");
             return false;
         }
         return true;
@@ -338,9 +355,52 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     }
 
     private void appendLog(String tag, String message) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            mainHandler.post(() -> appendLog(tag, message));
+            return;
+        }
+        if (destroyed) return;
         String text = "[" + currentTimeText() + "] [" + tag + "]\n  "
                 + (message == null ? "" : message.replace("\n", "\n  ")) + "\n\n";
         logBuffer.append(text);
+        if (!activityVisible) return;
+        updateLogView();
+    }
+
+    private void queueRxLog(byte[] data, int length) {
+        synchronized (rxLogLock) {
+            int previewRoom = RX_LOG_PREVIEW_BYTES - pendingRxPreviewBytes;
+            if (previewRoom > 0) {
+                int copy = Math.min(previewRoom, length);
+                System.arraycopy(data, 0, rxLogPreview, pendingRxPreviewBytes, copy);
+                pendingRxPreviewBytes += copy;
+            }
+            pendingRxBytes += length;
+            if (rxLogScheduled) return;
+            rxLogScheduled = true;
+        }
+        mainHandler.postDelayed(this::flushRxLog, RX_LOG_INTERVAL_MS);
+    }
+
+    private void flushRxLog() {
+        int total;
+        byte[] previewData;
+        int previewLength;
+        synchronized (rxLogLock) {
+            total = pendingRxBytes;
+            previewLength = pendingRxPreviewBytes;
+            previewData = Arrays.copyOf(rxLogPreview, previewLength);
+            pendingRxBytes = 0;
+            pendingRxPreviewBytes = 0;
+            rxLogScheduled = false;
+        }
+        if (total <= 0 || destroyed) return;
+        String text = preview(previewData, previewLength);
+        if (total > previewLength) text += " ...";
+        appendLog("RX " + total + "B", text);
+    }
+
+    private void updateLogView() {
         binding.tvLog.setText(logBuffer.getText());
         binding.svLog.post(() -> binding.svLog.fullScroll(android.view.View.FOCUS_DOWN));
     }
@@ -375,10 +435,28 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
 
     @Override
     protected void onDestroy() {
+        destroyed = true;
         if (activeSender != null) activeSender.cancel();
         closeSerial();
         workExecutor.shutdownNow();
         super.onDestroy();
+    }
+
+    @Override
+    protected void onPause() {
+        activityVisible = false;
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        activityVisible = true;
+        if (!destroyed) {
+            refreshSerialStatus();
+            refreshBusy();
+            updateLogView();
+        }
     }
 
     private interface BeforeTransfer {
