@@ -92,7 +92,7 @@ public final class YModemSender {
         }
 
         progress(listener, sent, fileData.length, "发送空文件头");
-        sendPacket(outputStream, 0, new byte[PACKET_SIZE]);
+        sendFinalEmptyHeader(outputStream);
         progress(listener, fileData.length, fileData.length, "YMODEM 完成");
     }
 
@@ -140,6 +140,16 @@ public final class YModemSender {
         outputStream.write((crc >> 8) & 0xFF);
         outputStream.write(crc & 0xFF);
         outputStream.flush();
+    }
+
+    private void sendFinalEmptyHeader(OutputStream outputStream) throws IOException, InterruptedException {
+        try {
+            sendPacket(outputStream, 0, new byte[PACKET_SIZE]);
+        } catch (IOException e) {
+            if ("设备取消传输".equals(e.getMessage()) || "传输已取消".equals(e.getMessage())) {
+                throw e;
+            }
+        }
     }
 
     private void writeByte(OutputStream outputStream, int value) throws IOException {
