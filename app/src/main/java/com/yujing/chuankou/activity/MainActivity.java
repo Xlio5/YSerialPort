@@ -226,8 +226,9 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
                 mainHandler.post(() -> appendLog("SYS", "第1次校验完成，自动等待设备第二次请求"));
                 sendYModemBlocking("BOOTLOADER 第2次正式写入", bootFile, false, 50, 100);
                 mainHandler.post(() -> {
-                    appendLog("SYS", "BOOTLOADER 一键升级完成");
-                    binding.tvProgress.setText("完成");
+                    appendLog("SYS", "BOOTLOADER 一键升级完成，请关机重启设备");
+                    binding.tvProgress.setText("完成，请关机重启");
+                    toast("BOOTLOADER升级完成，请关机重启");
                 });
             } catch (Exception e) {
                 mainHandler.post(() -> {
