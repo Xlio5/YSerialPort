@@ -9,7 +9,12 @@ public final class MavlinkSerialControl {
     private static final int SERIAL_CONTROL_CRC_EXTRA = 220;
     private static final int SERIAL_CONTROL_DEV_SHELL = 10;
     private static final int SERIAL_CONTROL_FLAG_RESPOND = 2;
-    private static final int SERIAL_CONTROL_PAYLOAD_LEN = 79;
+    private static final int SERIAL_CONTROL_PAYLOAD_LEN = 81;
+    private static final int GCS_SYSTEM_ID = 255;
+    private static final int GCS_COMPONENT_ID = 190;
+    private static final int TARGET_SYSTEM_ID = 1;
+    private static final int TARGET_COMPONENT_ID = 1;
+    private static final int REPLY_TIMEOUT_MS = 2000;
     private static int sequence;
 
     private MavlinkSerialControl() {
@@ -25,18 +30,20 @@ public final class MavlinkSerialControl {
 
         byte[] payload = new byte[SERIAL_CONTROL_PAYLOAD_LEN];
         writeUInt32(payload, 0, 0);
-        writeUInt16(payload, 4, 0);
+        writeUInt16(payload, 4, REPLY_TIMEOUT_MS);
         payload[6] = (byte) SERIAL_CONTROL_DEV_SHELL;
         payload[7] = (byte) SERIAL_CONTROL_FLAG_RESPOND;
         payload[8] = (byte) text.length;
         System.arraycopy(text, 0, payload, 9, text.length);
+        payload[79] = (byte) TARGET_SYSTEM_ID;
+        payload[80] = (byte) TARGET_COMPONENT_ID;
 
         byte[] frame = new byte[6 + payload.length + 2];
         frame[0] = (byte) STX_V1;
         frame[1] = (byte) payload.length;
         frame[2] = (byte) (sequence++ & 0xFF);
-        frame[3] = 1;
-        frame[4] = 1;
+        frame[3] = (byte) GCS_SYSTEM_ID;
+        frame[4] = (byte) GCS_COMPONENT_ID;
         frame[5] = (byte) MSG_ID_SERIAL_CONTROL;
         System.arraycopy(payload, 0, frame, 6, payload.length);
 

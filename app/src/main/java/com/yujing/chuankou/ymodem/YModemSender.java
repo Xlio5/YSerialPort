@@ -3,6 +3,7 @@ package com.yujing.chuankou.ymodem;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -13,18 +14,18 @@ public final class YModemSender {
     }
 
     private static final int SOH = 0x01;
-    private static final int STX = 0x02;
     private static final int EOT = 0x04;
     private static final int ACK = 0x06;
     private static final int NAK = 0x15;
     private static final int CAN = 0x18;
     private static final int CRC_REQUEST = 'C';
     private static final int PACKET_SIZE = 128;
-    private static final int PACKET_1K_SIZE = 1024;
     private static final long HANDSHAKE_TIMEOUT_MS = 60_000L;
     private static final long ACK_TIMEOUT_MS = 12_000L;
+    private static final int MAX_PACKET_RETRIES = 10;
 
     private final LinkedBlockingQueue<Integer> incoming;
+    private final ArrayDeque<Integer> pending = new ArrayDeque<>();
     private volatile boolean cancelled;
 
     public YModemSender(LinkedBlockingQueue<Integer> incoming) {
@@ -45,24 +46,23 @@ public final class YModemSender {
             throws IOException, InterruptedException {
         cancelled = false;
         incoming.clear();
+        pending.clear();
         progress(listener, 0, fileData.length, "等待设备发送 C");
         waitFor(CRC_REQUEST, HANDSHAKE_TIMEOUT_MS);
 
         progress(listener, 0, fileData.length, "发送文件头");
-        writePacket(outputStream, 0, headerBlock(fileName, fileData.length), PACKET_SIZE);
-        waitFor(ACK, ACK_TIMEOUT_MS);
+        sendPacket(outputStream, 0, headerBlock(fileName, fileData.length));
         waitFor(CRC_REQUEST, ACK_TIMEOUT_MS);
 
         int seq = 1;
         long sent = 0;
         while (sent < fileData.length) {
             checkCancelled();
-            int chunk = (int) Math.min(PACKET_1K_SIZE, fileData.length - sent);
-            byte[] block = new byte[PACKET_1K_SIZE];
+            int chunk = (int) Math.min(PACKET_SIZE, fileData.length - sent);
+            byte[] block = new byte[PACKET_SIZE];
             Arrays.fill(block, (byte) 0x1A);
             System.arraycopy(fileData, (int) sent, block, 0, chunk);
-            writePacket(outputStream, seq, block, PACKET_1K_SIZE);
-            waitFor(ACK, ACK_TIMEOUT_MS);
+            sendPacket(outputStream, seq, block);
             sent += chunk;
             progress(listener, Math.min(sent, fileData.length), fileData.length,
                     "发送数据 " + Math.min(sent, fileData.length) + "/" + fileData.length);
@@ -71,21 +71,28 @@ public final class YModemSender {
 
         progress(listener, sent, fileData.length, "发送结束标记");
         writeByte(outputStream, EOT);
-        int firstEotResponse = waitForAny(new int[]{NAK, ACK}, ACK_TIMEOUT_MS);
-        if (firstEotResponse == ACK && allowSingleEotAck) {
-            progress(listener, fileData.length, fileData.length, "YMODEM 完成");
-            return;
+        int firstEotResponse = waitForAny(new int[]{NAK, ACK, CRC_REQUEST}, ACK_TIMEOUT_MS);
+        boolean finalCReceived = false;
+        if (firstEotResponse == ACK) {
+            if (allowSingleEotAck) {
+                progress(listener, fileData.length, fileData.length, "YMODEM 完成");
+                return;
+            } else {
+                throw new IOException("设备过早 ACK EOT");
+            }
+        } else if (firstEotResponse == CRC_REQUEST) {
+            finalCReceived = true;
+        } else {
+            writeByte(outputStream, EOT);
+            int secondEotResponse = waitForAny(new int[]{ACK, CRC_REQUEST}, ACK_TIMEOUT_MS);
+            finalCReceived = secondEotResponse == CRC_REQUEST;
         }
-        if (firstEotResponse != NAK) {
-            throw new IOException("设备过早 ACK EOT");
+        if (!finalCReceived) {
+            waitFor(CRC_REQUEST, ACK_TIMEOUT_MS);
         }
-        writeByte(outputStream, EOT);
-        waitFor(ACK, ACK_TIMEOUT_MS);
-        waitFor(CRC_REQUEST, ACK_TIMEOUT_MS);
 
         progress(listener, sent, fileData.length, "发送空文件头");
-        writePacket(outputStream, 0, new byte[PACKET_SIZE], PACKET_SIZE);
-        waitFor(ACK, ACK_TIMEOUT_MS);
+        sendPacket(outputStream, 0, new byte[PACKET_SIZE]);
         progress(listener, fileData.length, fileData.length, "YMODEM 完成");
     }
 
@@ -105,12 +112,31 @@ public final class YModemSender {
         return fileName.replaceAll("[^A-Za-z0-9._-]", "_");
     }
 
-    private void writePacket(OutputStream outputStream, int sequence, byte[] data, int size) throws IOException {
-        outputStream.write(size == PACKET_1K_SIZE ? STX : SOH);
+    private void sendPacket(OutputStream outputStream, int sequence, byte[] data)
+            throws IOException, InterruptedException {
+        IOException lastError = null;
+        for (int retry = 0; retry < MAX_PACKET_RETRIES; retry++) {
+            writePacket(outputStream, sequence, data);
+            try {
+                int response = waitForAny(new int[]{ACK, NAK}, ACK_TIMEOUT_MS);
+                if (response == ACK) return;
+            } catch (IOException e) {
+                lastError = e;
+                if ("设备取消传输".equals(e.getMessage()) || "传输已取消".equals(e.getMessage())) {
+                    throw e;
+                }
+            }
+        }
+        if (lastError != null) throw lastError;
+        throw new IOException("设备 NAK，数据包重试失败");
+    }
+
+    private void writePacket(OutputStream outputStream, int sequence, byte[] data) throws IOException {
+        outputStream.write(SOH);
         outputStream.write(sequence & 0xFF);
         outputStream.write((~sequence) & 0xFF);
-        outputStream.write(data, 0, size);
-        int crc = crc16(data, size);
+        outputStream.write(data, 0, PACKET_SIZE);
+        int crc = crc16(data, PACKET_SIZE);
         outputStream.write((crc >> 8) & 0xFF);
         outputStream.write(crc & 0xFF);
         outputStream.flush();
@@ -129,15 +155,26 @@ public final class YModemSender {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
             checkCancelled();
-            Integer value = incoming.poll(150, TimeUnit.MILLISECONDS);
+            Integer value = pending.isEmpty() ? incoming.poll(150, TimeUnit.MILLISECONDS) : pending.removeFirst();
             if (value == null) continue;
             int b = value & 0xFF;
             for (int expected : expectedValues) {
                 if (b == expected) return b;
             }
+            if (b == CRC_REQUEST && contains(expectedValues, ACK)) {
+                pending.addFirst(b);
+                return ACK;
+            }
             if (b == CAN) throw new IOException("设备取消传输");
         }
         throw new IOException("等待设备响应超时");
+    }
+
+    private boolean contains(int[] values, int target) {
+        for (int value : values) {
+            if (value == target) return true;
+        }
+        return false;
     }
 
     private void checkCancelled() throws IOException {
