@@ -58,6 +58,7 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private FirmwareFile appFile;
     private volatile boolean busy;
     private volatile boolean appSideOtaMode;
+    private volatile boolean bootPass1Done;
     private volatile boolean activityVisible = true;
     private volatile boolean destroyed;
     private int pendingRxBytes;
@@ -181,9 +182,17 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
             appendLog("ERR", "未选择 BOOTLOADER 固件，不能发送校验包");
             return;
         }
-        appendLog("SYS", "发送 bl_upgrade，等待设备进入 BOOTLOADER 校验接收");
+        bootPass1Done = false;
+        refreshBusy();
+        appendLog("SYS", "BOOTLOADER 第1次: 发送 bl_upgrade，等待设备进入校验接收");
         appSideOtaMode = false;
-        runUpgrade("BOOTLOADER 校验", bootFile, false, () -> writeBytes(MavlinkSerialControl.shellCommand("bl_upgrade")));
+        runUpgrade("BOOTLOADER 第1次校验", bootFile, false,
+                () -> writeBytes(MavlinkSerialControl.shellCommand("bl_upgrade")),
+                () -> {
+                    bootPass1Done = true;
+                    appendLog("SYS", "BOOTLOADER 第1次完成。请等状态灯跑完后，点击 2 开始升级");
+                    toast("第1次校验完成，等灯跑完后点第2步");
+                });
     }
 
     private void startBootPass2() {
@@ -192,9 +201,18 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
             appendLog("ERR", "未选择 BOOTLOADER 固件，不能开始升级");
             return;
         }
-        appendLog("SYS", "等待设备第二次请求，发送 BOOTLOADER 正式升级包");
+        if (!bootPass1Done) {
+            toast("请先完成第1次校验包");
+            appendLog("ERR", "BOOTLOADER 第1次校验未完成，不能直接执行第2次升级");
+            return;
+        }
+        appendLog("SYS", "BOOTLOADER 第2次: 等待设备第二次请求，发送正式写入包");
         appSideOtaMode = false;
-        runUpgrade("BOOTLOADER 开始升级", bootFile, false, null);
+        runUpgrade("BOOTLOADER 第2次正式升级", bootFile, false, null,
+                () -> {
+                    bootPass1Done = false;
+                    appendLog("SYS", "BOOTLOADER 第2次完成，升级流程结束");
+                });
     }
 
     private void startAppUpgrade() {
@@ -205,7 +223,7 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         }
         boolean singleEotAck = appSideOtaMode;
         appSideOtaMode = false;
-        runUpgrade("APP 升级", appFile, singleEotAck, null);
+        runUpgrade("APP 升级", appFile, singleEotAck, null, null);
     }
 
     private void sendShellCommand(String command) {
@@ -221,7 +239,8 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         });
     }
 
-    private void runUpgrade(String title, FirmwareFile firmwareFile, boolean allowSingleEotAck, BeforeTransfer beforeTransfer) {
+    private void runUpgrade(String title, FirmwareFile firmwareFile, boolean allowSingleEotAck,
+                            BeforeTransfer beforeTransfer, Runnable afterSuccess) {
         if (!ensureSerialReady() || busy) return;
         busy = true;
         refreshBusy();
@@ -244,7 +263,10 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
                             binding.progressUpgrade.setProgress(percent);
                             binding.tvProgress.setText(percent + "%  " + message);
                         }));
-                mainHandler.post(() -> appendLog("SYS", title + " 完成"));
+                mainHandler.post(() -> {
+                    appendLog("SYS", title + " 完成");
+                    if (afterSuccess != null) afterSuccess.run();
+                });
             } catch (Exception e) {
                 mainHandler.post(() -> {
                     toast(title + "失败");
@@ -300,12 +322,14 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
             FirmwareFile firmwareFile = readFirmware(data.getData());
             if (requestCode == REQUEST_BOOT_FILE) {
                 bootFile = firmwareFile;
+                bootPass1Done = false;
                 binding.tvBootFile.setText(firmwareFile.name + "  " + firmwareFile.data.length + "B");
             } else if (requestCode == REQUEST_APP_FILE) {
                 appFile = firmwareFile;
                 binding.tvAppFile.setText(firmwareFile.name + "  " + firmwareFile.data.length + "B");
             }
             appendLog("SYS", "已选择 " + firmwareFile.name + " (" + firmwareFile.data.length + "B)");
+            refreshBusy();
         } catch (Exception e) {
             toast("读取固件失败");
             appendLog("ERR", "读取固件失败: " + e.getMessage());
@@ -345,7 +369,10 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
 
     private void refreshBusy() {
         binding.btnBootPrepare.setEnabled(!busy);
-        binding.btnBootStart.setEnabled(!busy);
+        boolean canBootPass2 = !busy && bootPass1Done;
+        binding.btnBootStart.setEnabled(canBootPass2);
+        binding.btnBootStart.setAlpha(canBootPass2 ? 1.0f : 0.45f);
+        binding.btnBootStart.setText(bootPass1Done ? "2 开始升级" : "2 等待第1次完成");
         binding.btnAppCommand.setEnabled(!busy);
         binding.btnAppSend.setEnabled(!busy);
         binding.btnCancel.setEnabled(busy);
