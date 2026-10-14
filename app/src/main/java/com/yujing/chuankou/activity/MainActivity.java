@@ -244,7 +244,7 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
             try {
                 writeBytes(MavlinkSerialControl.shellCommand("bl_upgrade"));
                 mainHandler.post(() -> appendLog("TX CMD", "bl_upgrade"));
-                Thread.sleep(250);
+                Thread.sleep(1000);
                 sendYModemBlocking("BOOTLOADER 第1次校验", bootFile, false, 0, 50);
                 mainHandler.post(() -> appendLog("SYS", "第1次校验完成，自动等待设备第二次请求"));
                 sendYModemBlocking("BOOTLOADER 第2次正式写入", bootFile, false, 50, 100);
@@ -308,7 +308,7 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
                 if (beforeTransfer != null) {
                     beforeTransfer.run();
                     mainHandler.post(() -> appendLog("TX CMD", "bl_upgrade"));
-                    Thread.sleep(250);
+                    Thread.sleep(1000);
                 }
                 YModemSender sender = new YModemSender(incomingBytes);
                 activeSender = sender;

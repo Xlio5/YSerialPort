@@ -19,6 +19,8 @@ public final class YModemSender {
     private static final int NAK = 0x15;
     private static final int CAN = 0x18;
     private static final int CRC_REQUEST = 'C';
+    private static final int MAVLINK_V1_STX = 0xFE;
+    private static final int MAVLINK_V2_STX = 0xFD;
     private static final int PACKET_SIZE = 128;
     private static final long HANDSHAKE_TIMEOUT_MS = 60_000L;
     private static final long ACK_TIMEOUT_MS = 12_000L;
@@ -165,7 +167,7 @@ public final class YModemSender {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
             checkCancelled();
-            Integer value = pending.isEmpty() ? incoming.poll(150, TimeUnit.MILLISECONDS) : pending.removeFirst();
+            Integer value = readProtocolByte(deadline);
             if (value == null) continue;
             int b = value & 0xFF;
             for (int expected : expectedValues) {
@@ -178,6 +180,52 @@ public final class YModemSender {
             if (b == CAN) throw new IOException("设备取消传输");
         }
         throw new IOException("等待设备响应超时");
+    }
+
+    private Integer readProtocolByte(long deadline) throws InterruptedException, IOException {
+        while (System.currentTimeMillis() < deadline) {
+            Integer value = pollByte(deadline);
+            if (value == null) return null;
+            int b = value & 0xFF;
+            if (b == MAVLINK_V1_STX) {
+                skipMavlinkV1Frame(deadline);
+                continue;
+            }
+            if (b == MAVLINK_V2_STX) {
+                skipMavlinkV2Frame(deadline);
+                continue;
+            }
+            return b;
+        }
+        return null;
+    }
+
+    private Integer pollByte(long deadline) throws InterruptedException {
+        if (!pending.isEmpty()) return pending.removeFirst();
+        long remaining = deadline - System.currentTimeMillis();
+        if (remaining <= 0) return null;
+        return incoming.poll(Math.min(150, remaining), TimeUnit.MILLISECONDS);
+    }
+
+    private void skipMavlinkV1Frame(long deadline) throws InterruptedException, IOException {
+        Integer len = pollByte(deadline);
+        if (len == null) return;
+        skipBytes((len & 0xFF) + 6, deadline);
+    }
+
+    private void skipMavlinkV2Frame(long deadline) throws InterruptedException, IOException {
+        Integer len = pollByte(deadline);
+        Integer incompatFlags = pollByte(deadline);
+        if (len == null || incompatFlags == null) return;
+        int signatureBytes = ((incompatFlags & 0x01) != 0) ? 13 : 0;
+        skipBytes((len & 0xFF) + 9 + signatureBytes, deadline);
+    }
+
+    private void skipBytes(int count, long deadline) throws InterruptedException, IOException {
+        for (int i = 0; i < count; i++) {
+            checkCancelled();
+            if (pollByte(deadline) == null) return;
+        }
     }
 
     private boolean contains(int[] values, int target) {
