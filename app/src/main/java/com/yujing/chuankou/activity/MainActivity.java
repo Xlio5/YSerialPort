@@ -81,7 +81,7 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         binding.btnAppFile.setOnClickListener(v -> chooseFile(REQUEST_APP_FILE));
         binding.btnBootPrepare.setOnClickListener(v -> startBootUpgrade());
         binding.btnBootStart.setVisibility(View.GONE);
-        binding.btnAppCommand.setOnClickListener(v -> sendShellCommand("ota_upgrade"));
+        binding.btnAppCommand.setVisibility(View.GONE);
         binding.btnAppSend.setOnClickListener(v -> startAppUpgrade());
         binding.btnCancel.setOnClickListener(v -> cancelTransfer());
         binding.btnClear.setOnClickListener(v -> clearLog());
@@ -249,9 +249,14 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
             appendLog("ERR", "未选择 APP 固件，不能发送 APP 固件");
             return;
         }
-        boolean singleEotAck = appSideOtaMode;
         appSideOtaMode = false;
-        runUpgrade("APP 升级", appFile, singleEotAck, null, null);
+        appendLog("SYS", "APP升级请先在开机时按住 R1+R3 进入升级模式");
+        runUpgrade("APP 升级", appFile, false, null,
+                () -> {
+                    appendLog("SYS", "APP 升级完成，请关机重启设备");
+                    binding.tvProgress.setText("完成，请关机重启");
+                    toast("APP升级完成，请关机重启");
+                });
     }
 
     private void sendShellCommand(String command) {
@@ -417,9 +422,6 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         binding.btnAppCommand.setEnabled(!busy);
         binding.btnAppSend.setEnabled(!busy);
         binding.btnCancel.setEnabled(busy);
-        if (!busy && binding.progressUpgrade.getProgress() == 100) {
-            binding.tvProgress.setText("完成");
-        }
     }
 
     private void appendLog(String tag, String message) {
