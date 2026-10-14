@@ -1,132 +1,345 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/bg_main_root"
         android:orientation="vertical"
-        android:padding="14dp">
+        android:padding="8dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="选择工作模式"
-            android:textColor="#E2E8F0"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:layout_height="44dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <TextView
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:text="阿木升级MCU"
+                android:textColor="#E2E8F0"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_clear"
+                android:layout_width="82dp"
+                android:layout_height="34dp"
+                android:background="@drawable/bg_button_secondary"
+                android:backgroundTint="@null"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:padding="0dp"
+                android:text="清日志"
+                android:textColor="#E2E8F0"
+                android:textSize="12sp"
+                app:backgroundTint="@null" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="根据当前调试任务进入对应工具"
-            android:textColor="#94A3B8"
-            android:textSize="13sp" />
+            android:layout_height="44dp"
+            android:background="@drawable/bg_panel"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="5dp">
+
+            <TextView
+                android:layout_width="58dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="串口"
+                android:textColor="#CBD5E1"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/sp_device"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_field"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp" />
+
+            <TextView
+                android:layout_width="58dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="7dp"
+                android:gravity="center"
+                android:text="波特率"
+                android:textColor="#CBD5E1"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/sp_baud"
+                android:layout_width="126dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_field"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp" />
+
+            <Button
+                android:id="@+id/btn_scan"
+                android:layout_width="76dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="7dp"
+                android:background="@drawable/bg_button_secondary"
+                android:backgroundTint="@null"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:padding="0dp"
+                android:text="扫描"
+                android:textColor="#E2E8F0"
+                android:textSize="12sp"
+                app:backgroundTint="@null" />
+
+            <Button
+                android:id="@+id/btn_connect"
+                android:layout_width="96dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="7dp"
+                android:background="@drawable/bg_button_primary"
+                android:backgroundTint="@null"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:padding="0dp"
+                android:text="连接串口"
+                android:textColor="#0F172A"
+                android:textSize="12sp"
+                app:backgroundTint="@null" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="7dp"
             android:layout_weight="1"
             android:orientation="horizontal">
 
             <LinearLayout
-                android:id="@+id/card_serial"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="4dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_panel"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="8dp">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="串口助手"
+                    android:text="升级 BOOTLOADER"
                     android:textColor="#38BDF8"
-                    android:textSize="24sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tv_boot_file"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:gravity="center"
-                    android:text="串口收发、CH34x 免驱、HEX/ASCII 调试"
+                    android:layout_height="32dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_field"
+                    android:ellipsize="middle"
+                    android:gravity="center_vertical"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:singleLine="true"
+                    android:text="未选择 BOOT 固件"
                     android:textColor="#CBD5E1"
-                    android:textSize="14sp" />
-            </LinearLayout>
+                    android:textSize="12sp" />
 
-            <LinearLayout
-                android:id="@+id/card_udp"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_panel"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <TextView
+                <Button
+                    android:id="@+id/btn_boot_file"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="网络助手"
+                    android:layout_height="34dp"
+                    android:layout_marginTop="7dp"
+                    android:background="@drawable/bg_button_secondary"
+                    android:backgroundTint="@null"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="0dp"
+                    android:text="选择BOOT固件"
+                    android:textColor="#E2E8F0"
+                    android:textSize="12sp"
+                    app:backgroundTint="@null" />
+
+                <Button
+                    android:id="@+id/btn_boot_prepare"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_button_primary"
+                    android:backgroundTint="@null"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="0dp"
+                    android:text="1 发送校验包"
+                    android:textColor="#0F172A"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
+
+                <Button
+                    android:id="@+id/btn_boot_start"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_button_success"
+                    android:backgroundTint="@null"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="0dp"
+                    android:text="2 开始升级"
                     android:textColor="#22C55E"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:gravity="center"
-                    android:text="UDP 监听、目标发送、收发日志"
-                    android:textColor="#CBD5E1"
-                    android:textSize="14sp" />
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/card_bridge"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="4dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_panel"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="8dp">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="串口转 UDP"
-                    android:textColor="#FBBF24"
-                    android:textSize="24sp"
+                    android:text="升级 APP"
+                    android:textColor="#22C55E"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tv_app_file"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:gravity="center"
-                    android:text="串口数据转 UDP，UDP 数据回写串口"
+                    android:layout_height="32dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_field"
+                    android:ellipsize="middle"
+                    android:gravity="center_vertical"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:singleLine="true"
+                    android:text="未选择 APP 固件"
                     android:textColor="#CBD5E1"
-                    android:textSize="14sp" />
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btn_app_file"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:layout_marginTop="7dp"
+                    android:background="@drawable/bg_button_secondary"
+                    android:backgroundTint="@null"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="0dp"
+                    android:text="选择APP固件"
+                    android:textColor="#E2E8F0"
+                    android:textSize="12sp"
+                    app:backgroundTint="@null" />
+
+                <Button
+                    android:id="@+id/btn_app_command"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_button_secondary"
+                    android:backgroundTint="@null"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="0dp"
+                    android:text="进入APP升级"
+                    android:textColor="#E2E8F0"
+                    android:textSize="13sp"
+                    app:backgroundTint="@null" />
+
+                <Button
+                    android:id="@+id/btn_app_send"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_button_primary"
+                    android:backgroundTint="@null"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:padding="0dp"
+                    android:text="发送APP固件"
+                    android:textColor="#0F172A"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@null" />
             </LinearLayout>
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="7dp"
+            android:background="@drawable/bg_panel"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="6dp">
+
+            <ProgressBar
+                android:id="@+id/progress_upgrade"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="12dp"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="0" />
+
+            <TextView
+                android:id="@+id/tv_progress"
+                android:layout_width="210dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:text="待机"
+                android:textColor="#CBD5E1"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btn_cancel"
+                android:layout_width="74dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_button_danger"
+                android:backgroundTint="@null"
+                android:enabled="false"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:padding="0dp"
+                android:text="取消"
+                android:textColor="#F87171"
+                android:textSize="12sp"
+                app:backgroundTint="@null" />
+        </LinearLayout>
+
+        <ScrollView
+            android:id="@+id/sv_log"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="7dp"
+            android:background="@drawable/bg_log"
+            android:fillViewport="true">
+
+            <TextView
+                android:id="@+id/tv_log"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:padding="8dp"
+                android:textColor="#E2E8F0"
+                android:textSize="11sp" />
+        </ScrollView>
     </LinearLayout>
 </layout>

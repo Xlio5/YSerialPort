@@ -66,7 +66,7 @@ android {
     //打包
     android.applicationVariants.configureEach { variant ->
         //def appName = variant.productFlavors[0].name //获取渠道名称
-        def appName = "YSerialPort" //rootProject.name
+        def appName = "AmuMcuUpgrade" //rootProject.name
         def createDate = new Date().format("YYYYMMdd", TimeZone.getTimeZone("GMT+08:00"))
         def createTime = new Date().format("HHmmss", TimeZone.getTimeZone("GMT+08:00"))
         variant.outputs.configureEach {
