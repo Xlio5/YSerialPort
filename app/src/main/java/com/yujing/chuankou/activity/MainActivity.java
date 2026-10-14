@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.OpenableColumns;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
@@ -23,8 +24,10 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,7 +61,6 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
     private FirmwareFile appFile;
     private volatile boolean busy;
     private volatile boolean appSideOtaMode;
-    private volatile boolean bootPass1Done;
     private volatile boolean activityVisible = true;
     private volatile boolean destroyed;
     private int pendingRxBytes;
@@ -77,14 +79,15 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         binding.btnConnect.setOnClickListener(v -> toggleSerial());
         binding.btnBootFile.setOnClickListener(v -> chooseFile(REQUEST_BOOT_FILE));
         binding.btnAppFile.setOnClickListener(v -> chooseFile(REQUEST_APP_FILE));
-        binding.btnBootPrepare.setOnClickListener(v -> startBootPass1());
-        binding.btnBootStart.setOnClickListener(v -> startBootPass2());
+        binding.btnBootPrepare.setOnClickListener(v -> startBootUpgrade());
+        binding.btnBootStart.setVisibility(View.GONE);
         binding.btnAppCommand.setOnClickListener(v -> sendShellCommand("ota_upgrade"));
         binding.btnAppSend.setOnClickListener(v -> startAppUpgrade());
         binding.btnCancel.setOnClickListener(v -> cancelTransfer());
         binding.btnClear.setOnClickListener(v -> clearLog());
         refreshSerialStatus();
         refreshBusy();
+        mainHandler.postDelayed(this::autoConnectDefaultSerial, 300);
     }
 
     private void setupBaudRate() {
@@ -100,6 +103,21 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         if (devices.length == 0) {
             devices = new String[]{DEFAULT_DEVICE, "/dev/ttyUSB0", "/dev/ttyS0", "/dev/ttyS1"};
             appendLog("SYS", "未扫描到串口，已给出常见路径");
+        } else {
+            boolean hasDefault = false;
+            for (String device : devices) {
+                if (DEFAULT_DEVICE.equals(device)) {
+                    hasDefault = true;
+                    break;
+                }
+            }
+            if (!hasDefault) {
+                List<String> merged = new ArrayList<>();
+                merged.add(DEFAULT_DEVICE);
+                merged.addAll(Arrays.asList(devices));
+                devices = merged.toArray(new String[0]);
+                appendLog("SYS", "未扫描到 " + DEFAULT_DEVICE + "，已加入默认路径");
+            }
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_spinner_dark, devices);
         adapter.setDropDownViewResource(R.layout.item_spinner_dark_dropdown);
@@ -112,6 +130,16 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
             }
         }
         binding.spDevice.setSelection(selected);
+    }
+
+    private void autoConnectDefaultSerial() {
+        if (destroyed || isSerialOpen()) return;
+        Object item = binding.spDevice.getSelectedItem();
+        if (item == null || !DEFAULT_DEVICE.equals(item.toString())) {
+            scanPorts();
+        }
+        appendLog("SYS", "自动连接 " + DEFAULT_DEVICE);
+        openSerial();
     }
 
     private void toggleSerial() {
@@ -176,43 +204,42 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         readThread.start();
     }
 
-    private void startBootPass1() {
+    private void startBootUpgrade() {
         if (bootFile == null) {
             toast("请先选择 BOOTLOADER 固件");
-            appendLog("ERR", "未选择 BOOTLOADER 固件，不能发送校验包");
+            appendLog("ERR", "未选择 BOOTLOADER 固件，不能一键升级");
             return;
         }
-        bootPass1Done = false;
+        if (!ensureSerialReady() || busy) return;
+        busy = true;
+        appSideOtaMode = false;
         refreshBusy();
-        appendLog("SYS", "BOOTLOADER 第1次: 发送 bl_upgrade，等待设备进入校验接收");
-        appSideOtaMode = false;
-        runUpgrade("BOOTLOADER 第1次校验", bootFile, false,
-                () -> writeBytes(MavlinkSerialControl.shellCommand("bl_upgrade")),
-                () -> {
-                    bootPass1Done = true;
-                    appendLog("SYS", "BOOTLOADER 第1次完成。请等状态灯跑完后，点击 2 开始升级");
-                    toast("第1次校验完成，等灯跑完后点第2步");
+        binding.progressUpgrade.setProgress(0);
+        binding.tvProgress.setText("BOOTLOADER 一键升级准备中");
+        appendLog("SYS", "BOOTLOADER 一键升级开始: " + bootFile.name + " (" + bootFile.data.length + "B)");
+        workExecutor.execute(() -> {
+            try {
+                writeBytes(MavlinkSerialControl.shellCommand("bl_upgrade"));
+                mainHandler.post(() -> appendLog("TX CMD", "bl_upgrade"));
+                Thread.sleep(250);
+                sendYModemBlocking("BOOTLOADER 第1次校验", bootFile, false, 0, 50);
+                mainHandler.post(() -> appendLog("SYS", "第1次校验完成，自动等待设备第二次请求"));
+                sendYModemBlocking("BOOTLOADER 第2次正式写入", bootFile, false, 50, 100);
+                mainHandler.post(() -> {
+                    appendLog("SYS", "BOOTLOADER 一键升级完成");
+                    binding.tvProgress.setText("完成");
                 });
-    }
-
-    private void startBootPass2() {
-        if (bootFile == null) {
-            toast("请先选择 BOOTLOADER 固件");
-            appendLog("ERR", "未选择 BOOTLOADER 固件，不能开始升级");
-            return;
-        }
-        if (!bootPass1Done) {
-            toast("请先完成第1次校验包");
-            appendLog("ERR", "BOOTLOADER 第1次校验未完成，不能直接执行第2次升级");
-            return;
-        }
-        appendLog("SYS", "BOOTLOADER 第2次: 等待设备第二次请求，发送正式写入包");
-        appSideOtaMode = false;
-        runUpgrade("BOOTLOADER 第2次正式升级", bootFile, false, null,
-                () -> {
-                    bootPass1Done = false;
-                    appendLog("SYS", "BOOTLOADER 第2次完成，升级流程结束");
+            } catch (Exception e) {
+                mainHandler.post(() -> {
+                    toast("BOOTLOADER 一键升级失败");
+                    appendLog("ERR", "BOOTLOADER 一键升级失败: " + e.getMessage());
                 });
+            } finally {
+                activeSender = null;
+                busy = false;
+                mainHandler.post(this::refreshBusy);
+            }
+        });
     }
 
     private void startAppUpgrade() {
@@ -280,6 +307,22 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
         });
     }
 
+    private void sendYModemBlocking(String title, FirmwareFile firmwareFile, boolean allowSingleEotAck,
+                                    int progressStart, int progressEnd)
+            throws Exception {
+        YModemSender sender = new YModemSender(incomingBytes);
+        activeSender = sender;
+        mainHandler.post(() -> appendLog("SYS", title + " YMODEM 开始: " + firmwareFile.name));
+        sender.send(outputStream, firmwareFile.name, firmwareFile.data, allowSingleEotAck,
+                (sent, total, message) -> mainHandler.post(() -> {
+                    int localPercent = total <= 0 ? 0 : (int) Math.min(100, sent * 100 / total);
+                    int percent = progressStart + (progressEnd - progressStart) * localPercent / 100;
+                    binding.progressUpgrade.setProgress(percent);
+                    binding.tvProgress.setText(percent + "%  " + title + " " + message);
+                }));
+        mainHandler.post(() -> appendLog("SYS", title + " 完成"));
+    }
+
     private boolean ensureSerialReady() {
         if (!isSerialOpen() || outputStream == null) {
             toast("请先连接串口");
@@ -322,7 +365,6 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
             FirmwareFile firmwareFile = readFirmware(data.getData());
             if (requestCode == REQUEST_BOOT_FILE) {
                 bootFile = firmwareFile;
-                bootPass1Done = false;
                 binding.tvBootFile.setText(firmwareFile.name + "  " + firmwareFile.data.length + "B");
             } else if (requestCode == REQUEST_APP_FILE) {
                 appFile = firmwareFile;
@@ -369,10 +411,8 @@ public class MainActivity extends BaseActivity<ActivityModeBinding> {
 
     private void refreshBusy() {
         binding.btnBootPrepare.setEnabled(!busy);
-        boolean canBootPass2 = !busy && bootPass1Done;
-        binding.btnBootStart.setEnabled(canBootPass2);
-        binding.btnBootStart.setAlpha(canBootPass2 ? 1.0f : 0.45f);
-        binding.btnBootStart.setText(bootPass1Done ? "2 开始升级" : "2 等待第1次完成");
+        binding.btnBootPrepare.setAlpha(busy ? 0.45f : 1.0f);
+        binding.btnBootStart.setVisibility(View.GONE);
         binding.btnAppCommand.setEnabled(!busy);
         binding.btnAppSend.setEnabled(!busy);
         binding.btnCancel.setEnabled(busy);
